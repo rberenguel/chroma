@@ -26,6 +26,7 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
   let gameState = {
     score: 0,
     level: startLevel,
+    isLevelCompleting: false, // Prevents multiple calls to onLevelComplete during transition
   };
 
   // --- UI Elements ---
@@ -191,9 +192,15 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
   }
 
   function onLevelComplete() {
+    if (gameState.isLevelCompleting) {
+      return; // Already transitioning, prevent duplicate calls
+    }
+    gameState.isLevelCompleting = true; // Mark as transitioning
+
     statusText.textContent = "🎉 Level Complete!";
     statusText.style.color = "#00ff00";
     statusText.classList.add("visible");
+    progressBar.style.width = "0%"; // Immediately reset progress bar
 
     setTimeout(() => {
       gameState.level++;
@@ -209,6 +216,8 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
   }
 
   function advanceToNextLevel() {
+    gameState.isLevelCompleting = false; // Reset flag for the new level
+
     // Clean up
     if (grid) {
       app.stage.removeChild(grid.getPulseFrame());
@@ -217,7 +226,6 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
     }
 
     // Reset
-    progressBar.style.width = "0%";
     statusText.style.color = "#ff6666";
     statusText.classList.remove("visible");
 
@@ -227,16 +235,17 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
 
   // --- Animation Loop (Ticker) ---
   app.ticker.add((ticker) => {
-    const delta = ticker.deltaTime;
+    // Pass delta in milliseconds
+    const deltaMS = ticker.deltaMS;
 
     // Update game systems
     if (pulseSystem) {
-      pulseSystem.update(delta);
+      pulseSystem.update(deltaMS);
       updatePulseIndicator();
     }
 
     if (grid) {
-      grid.update(delta);
+      grid.update(deltaMS);
       updateProgressBar();
       updateStatusText();
     }

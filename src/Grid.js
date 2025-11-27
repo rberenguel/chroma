@@ -56,7 +56,8 @@ export class Grid {
     const availableWidth = this.app.screen.width - margin * 2;
     const availableHeight = this.app.screen.height - margin * 2 - 100; // Leave room for UI
 
-    const tileWidth = (availableWidth - this.TILE_PADDING * (this.cols + 1)) / this.cols;
+    const tileWidth =
+      (availableWidth - this.TILE_PADDING * (this.cols + 1)) / this.cols;
     const tileHeight =
       (availableHeight - this.TILE_PADDING * (this.rows + 1)) / this.rows;
 
@@ -83,7 +84,7 @@ export class Grid {
           col,
           row,
           this.tileSize,
-          this.TILE_PADDING
+          this.TILE_PADDING,
         );
 
         // Add interaction handler
@@ -154,7 +155,7 @@ export class Grid {
     const result = resolveInteraction(
       tile.colorIndex,
       pulseColorIndex,
-      this.palette
+      this.palette,
     );
 
     switch (result.result) {
@@ -203,7 +204,7 @@ export class Grid {
         Array.from(uniqueMatches).map((key) => {
           const [row, col] = key.split(",").map(Number);
           return { row, col };
-        })
+        }),
       );
 
       this.timeSinceLastMatch = 0; // Reset stagnation timer
@@ -299,9 +300,7 @@ export class Grid {
         this.tiles[r][c].playDestroyEffect();
         setTimeout(() => {
           // Set new color and play restoration effect
-          this.tiles[r][c].setColor(
-            getRandomColorIndex(this.palette.length)
-          );
+          this.tiles[r][c].setColor(getRandomColorIndex(this.palette.length));
           this.tiles[r][c].playRestoreEffect();
           this.greyCount--;
         }, GREY_RESTORE_DELAY);
@@ -321,7 +320,7 @@ export class Grid {
 
   dropTilesAndFill(removedMatches) {
     // Create a set for fast lookup
-    const removedSet = new Set(removedMatches.map(m => `${m.row},${m.col}`));
+    const removedSet = new Set(removedMatches.map((m) => `${m.row},${m.col}`));
 
     // Process each column independently
     for (let col = 0; col < this.cols; col++) {
@@ -337,7 +336,7 @@ export class Grid {
           moves.push({
             fromRow: readRow,
             toRow: writeRow,
-            colorIndex: this.tiles[readRow][col].colorIndex
+            colorIndex: this.tiles[readRow][col].colorIndex,
           });
           writeRow--;
         }
@@ -351,17 +350,18 @@ export class Grid {
         moves.push({
           fromRow: -1, // New tile (from off-screen)
           toRow: row,
-          colorIndex: getRandomColorIndex(this.palette.length)
+          colorIndex: getRandomColorIndex(this.palette.length),
         });
       }
 
       // Step 3: Apply moves with animation
-      moves.forEach(move => {
+      moves.forEach((move) => {
         const tile = this.tiles[move.toRow][col];
         tile.stopDestroyEffect();
 
         const totalSize = this.tileSize + this.TILE_PADDING;
-        const targetY = move.toRow * totalSize + this.tileSize / 2 + this.TILE_PADDING / 2;
+        const targetY =
+          move.toRow * totalSize + this.tileSize / 2 + this.TILE_PADDING / 2;
 
         let startY;
         if (move.fromRow === -1) {
@@ -369,7 +369,10 @@ export class Grid {
           startY = -totalSize;
         } else {
           // Existing tile from its current position
-          startY = move.fromRow * totalSize + this.tileSize / 2 + this.TILE_PADDING / 2;
+          startY =
+            move.fromRow * totalSize +
+            this.tileSize / 2 +
+            this.TILE_PADDING / 2;
         }
 
         // Set color and start animation
@@ -412,62 +415,38 @@ export class Grid {
 
   animateTileFall(tile, targetRow) {
     const container = tile.getContainer();
-    const padding = 4;
-    const totalSize = this.tileSize + padding;
-    const targetY = targetRow * totalSize + this.tileSize / 2 + padding / 2;
-
-    // Start from above
-    const startY = targetY - totalSize * 2;
-    container.y = startY;
-
-    // Animate to target position
-    const startTime = Date.now();
-    const duration = 300;
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const t = Math.min(elapsed / duration, 1);
-
-      // Ease out effect
-      const eased = 1 - Math.pow(1 - t, 3);
-
-      container.y = startY + (targetY - startY) * eased;
-
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
+    // ...
+    // ...
     animate();
   }
 
-
-  update(deltaTime) {
+  update(deltaMS) {
     // Update all tiles
     this.tiles.forEach((row) => {
       row.forEach((tile) => {
-        tile.update(deltaTime);
+        tile.update(deltaMS);
       });
     });
 
-    // Update stagnation timer
-    this.timeSinceLastMatch += deltaTime * 16.67;
+    // TODO: Re-enable stagnation and vignette effects
+    // // Update stagnation timer
+    // this.timeSinceLastMatch += deltaMS;
 
-    if (this.timeSinceLastMatch > this.stagnationThreshold) {
-      this.triggerStagnation();
-      this.timeSinceLastMatch = 0;
-    }
+    // if (this.timeSinceLastMatch > this.stagnationThreshold) {
+    //   this.triggerStagnation();
+    //   this.timeSinceLastMatch = 0;
+    // }
 
-    // Update urgency based on stagnation
-    const urgencyLevel =
-      1 + (this.timeSinceLastMatch / this.stagnationThreshold) * 2;
-    this.tiles.forEach((row) => {
-      row.forEach((tile) => {
-        if (!tile.isGrey) {
-          tile.setUrgency(urgencyLevel);
-        }
-      });
-    });
+    // // Update urgency based on stagnation
+    // const urgencyLevel =
+    //   1 + (this.timeSinceLastMatch / this.stagnationThreshold) * 2;
+    // this.tiles.forEach((row) => {
+    //   row.forEach((tile) => {
+    //     if (!tile.isGrey) {
+    //       tile.setUrgency(urgencyLevel);
+    //     }
+    //   });
+    // });
   }
 
   triggerStagnation() {

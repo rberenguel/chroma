@@ -17,12 +17,36 @@ function hsbToRgb(h, s, b) {
 
   let r, g, bl;
   switch (i % 6) {
-    case 0: r = b; g = t; bl = p; break;
-    case 1: r = q; g = b; bl = p; break;
-    case 2: r = p; g = b; bl = t; break;
-    case 3: r = p; g = q; bl = b; break;
-    case 4: r = t; g = p; bl = b; break;
-    case 5: r = b; g = p; bl = q; break;
+    case 0:
+      r = b;
+      g = t;
+      bl = p;
+      break;
+    case 1:
+      r = q;
+      g = b;
+      bl = p;
+      break;
+    case 2:
+      r = p;
+      g = b;
+      bl = t;
+      break;
+    case 3:
+      r = p;
+      g = q;
+      bl = b;
+      break;
+    case 4:
+      r = t;
+      g = p;
+      bl = b;
+      break;
+    case 5:
+      r = b;
+      g = p;
+      bl = q;
+      break;
   }
 
   const red = Math.round(r * 255);
@@ -109,7 +133,8 @@ function generateMonochromePalette(seed, steps) {
 function generateExtremePalette(seed, steps) {
   // Pick complementary or widely spaced hues
   const hue1 = Math.floor(seededRandom(seed * 17) * 360);
-  const hue2 = (hue1 + 120 + Math.floor(seededRandom(seed * 23 + 7) * 120)) % 360;
+  const hue2 =
+    (hue1 + 120 + Math.floor(seededRandom(seed * 23 + 7) * 120)) % 360;
 
   const color1 = hsbToRgb(hue1, 0.95, 1.0);
   const color2 = hsbToRgb(hue2, 0.95, 1.0);
@@ -151,8 +176,8 @@ function generateLevelConfig(level) {
       palette: isNeon
         ? generateNeonPalette(level + gameSeed, numColors)
         : isMono
-        ? generateMonochromePalette(level + gameSeed, numColors)
-        : generateExtremePalette(level + gameSeed, numColors),
+          ? generateMonochromePalette(level + gameSeed, numColors)
+          : generateExtremePalette(level + gameSeed, numColors),
       safeThreshold: 3,
       pulseMode: "binary",
       stagnationTime: 30000,
@@ -171,8 +196,8 @@ function generateLevelConfig(level) {
       palette: isNeon
         ? generateNeonPalette(level + gameSeed, 4)
         : isMono
-        ? generateMonochromePalette(level + gameSeed, 4)
-        : generateExtremePalette(level + gameSeed, 4),
+          ? generateMonochromePalette(level + gameSeed, 4)
+          : generateExtremePalette(level + gameSeed, 4),
       safeThreshold: pattern <= 15 ? 3 : 2,
       pulseMode: "binary",
       stagnationTime: 28000,
@@ -191,8 +216,8 @@ function generateLevelConfig(level) {
     palette: isNeon
       ? generateNeonPalette(level + gameSeed, steps)
       : isMono
-      ? generateMonochromePalette(level + gameSeed, steps)
-      : generateExtremePalette(level + gameSeed, steps),
+        ? generateMonochromePalette(level + gameSeed, steps)
+        : generateExtremePalette(level + gameSeed, steps),
     safeThreshold: 2,
     pulseMode: "binary",
     stagnationTime: 25000 - (pattern - 20) * 300,
@@ -200,13 +225,16 @@ function generateLevelConfig(level) {
   };
 }
 
-export const LEVEL_CONFIGS = new Proxy({}, {
-  get(target, prop) {
-    const level = parseInt(prop);
-    if (isNaN(level)) return undefined;
-    return generateLevelConfig(level);
-  }
-});
+export const LEVEL_CONFIGS = new Proxy(
+  {},
+  {
+    get(target, prop) {
+      const level = parseInt(prop);
+      if (isNaN(level)) return undefined;
+      return generateLevelConfig(level);
+    },
+  },
+);
 
 // Color names for accessibility symbols
 export const COLOR_SYMBOLS = ["●", "◆", "▲", "■", "★", "◉", "◈", "▼", "⬟"];

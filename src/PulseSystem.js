@@ -28,8 +28,8 @@ export class PulseSystem {
 
     // Animation for smooth color transition
     this.transitionProgress = 0;
-    this.isTransitioning = false;
-    this.transitionSpeed = 0.03; // Speed of visual transition
+    this.isAdvancing = false;
+    this.transitionSpeed = 0.002; // Speed of visual transition
   }
 
   /**
@@ -37,32 +37,33 @@ export class PulseSystem {
    */
   advance() {
     // Move to next primary color
-    this.currentPrimaryIndex = (this.currentPrimaryIndex + 1) % this.primaryIndices.length;
+    this.currentPrimaryIndex =
+      (this.currentPrimaryIndex + 1) % this.primaryIndices.length;
     this.targetColorIndex = this.primaryIndices[this.currentPrimaryIndex];
 
-    this.isTransitioning = true;
+    this.isAdvancing = true;
     this.transitionProgress = 0;
   }
 
   /**
    * Updates the pulse system (only for visual interpolation)
-   * @param {number} deltaTime - Time delta from ticker
+   * @param {number} deltaMS - Time delta from ticker in milliseconds
    */
-  update(deltaTime) {
-    if (this.isTransitioning) {
-      this.transitionProgress += this.transitionSpeed * deltaTime;
+  update(deltaMS) {
+    if (this.isAdvancing) {
+      this.transitionProgress += this.transitionSpeed * deltaMS;
 
       if (this.transitionProgress >= 1) {
         this.transitionProgress = 1;
         this.currentColorIndex = this.targetColorIndex;
-        this.isTransitioning = false;
+        this.isAdvancing = false;
       }
 
       // Interpolate color for smooth visual transition
       this.currentColor = interpolateColor(
         this.palette[this.currentColorIndex],
         this.palette[this.targetColorIndex],
-        this.transitionProgress
+        this.transitionProgress,
       );
     } else {
       // Not transitioning, just show current color

@@ -54,8 +54,10 @@ export class Tile {
 
     // Set position - centered on the tile position
     const totalSize = this.tileSize + this.padding;
-    this.container.x = this.gridX * totalSize + this.tileSize / 2 + this.padding / 2;
-    this.container.y = this.gridY * totalSize + this.tileSize / 2 + this.padding / 2;
+    this.container.x =
+      this.gridX * totalSize + this.tileSize / 2 + this.padding / 2;
+    this.container.y =
+      this.gridY * totalSize + this.tileSize / 2 + this.padding / 2;
 
     // Enable interaction
     this.container.eventMode = "static";
@@ -70,16 +72,36 @@ export class Tile {
     if (this.isGrey) {
       // Grey tiles with much lighter color when damaged
       const greyShade = this.greyHealth === 1 ? 0xcccccc : GREY_COLOR;
-      this.graphics.roundRect(-halfSize, -halfSize, this.tileSize, this.tileSize, TILE_CORNER_RADIUS);
+      this.graphics.roundRect(
+        -halfSize,
+        -halfSize,
+        this.tileSize,
+        this.tileSize,
+        TILE_CORNER_RADIUS,
+      );
       this.graphics.fill(greyShade);
       // Thin white stroke to make grey tiles clearly distinct
-      this.graphics.stroke({ width: TILE_STROKE_WIDTH_LOCKED, color: 0xffffff, alpha: 0.6 });
+      this.graphics.stroke({
+        width: TILE_STROKE_WIDTH_LOCKED,
+        color: 0xffffff,
+        alpha: 0.6,
+      });
     } else {
       // Normal colored tiles
       const color = this.palette[this.colorIndex];
-      this.graphics.roundRect(-halfSize, -halfSize, this.tileSize, this.tileSize, TILE_CORNER_RADIUS);
+      this.graphics.roundRect(
+        -halfSize,
+        -halfSize,
+        this.tileSize,
+        this.tileSize,
+        TILE_CORNER_RADIUS,
+      );
       this.graphics.fill(color);
-      this.graphics.stroke({ width: TILE_STROKE_WIDTH_NORMAL, color: 0xffffff, alpha: 0.3 });
+      this.graphics.stroke({
+        width: TILE_STROKE_WIDTH_NORMAL,
+        color: 0xffffff,
+        alpha: 0.3,
+      });
     }
 
     this.updateVignette();
@@ -107,18 +129,20 @@ export class Tile {
         -halfSize + inset,
         this.tileSize - inset * 2,
         this.tileSize - inset * 2,
-        TILE_CORNER_RADIUS
+        TILE_CORNER_RADIUS,
       );
-      this.vignetteGraphics.fill({ color: 0x000000, alpha: layerOpacity / layers });
+      this.vignetteGraphics.fill({
+        color: 0x000000,
+        alpha: layerOpacity / layers,
+      });
     }
   }
 
-
   /**
    * Updates the tile animation
-   * @param {number} deltaTime
+   * @param {number} deltaMS
    */
-  update(deltaTime) {
+  update(deltaMS) {
     // Don't update if destroy animation is running
     if (this.destroyAnimationId) return;
 
@@ -180,7 +204,9 @@ export class Tile {
       const elapsed = Date.now() - shakeStart;
       if (elapsed < LOCKED_SHAKE_DURATION) {
         this.container.x =
-          originalX + Math.sin((elapsed / LOCKED_SHAKE_PERIOD) * Math.PI) * LOCKED_SHAKE_AMOUNT;
+          originalX +
+          Math.sin((elapsed / LOCKED_SHAKE_PERIOD) * Math.PI) *
+            LOCKED_SHAKE_AMOUNT;
         requestAnimationFrame(shake);
       } else {
         this.container.x = originalX;
@@ -214,7 +240,9 @@ export class Tile {
     }
 
     // Store original color
-    const originalColor = this.isGrey ? GREY_COLOR : this.palette[this.colorIndex];
+    const originalColor = this.isGrey
+      ? GREY_COLOR
+      : this.palette[this.colorIndex];
 
     const startTime = Date.now();
 
@@ -228,12 +256,17 @@ export class Tile {
         // Redraw with white color
         this.graphics.clear();
         const halfSize = this.tileSize / 2;
-        this.graphics.roundRect(-halfSize, -halfSize, this.tileSize, this.tileSize, TILE_CORNER_RADIUS);
+        this.graphics.roundRect(
+          -halfSize,
+          -halfSize,
+          this.tileSize,
+          this.tileSize,
+          TILE_CORNER_RADIUS,
+        );
         this.graphics.fill(0xffffff);
 
         const scale = 1 + t * DESTROY_FLASH_SCALE;
         this.container.scale.set(scale);
-
       } else if (elapsed < DESTROY_TOTAL_DURATION) {
         // Pop out - shrink and fade
         const t = (elapsed - DESTROY_FLASH_DURATION) / DESTROY_POP_DURATION;
@@ -242,13 +275,18 @@ export class Tile {
         // Keep white
         this.graphics.clear();
         const halfSize = this.tileSize / 2;
-        this.graphics.roundRect(-halfSize, -halfSize, this.tileSize, this.tileSize, TILE_CORNER_RADIUS);
+        this.graphics.roundRect(
+          -halfSize,
+          -halfSize,
+          this.tileSize,
+          this.tileSize,
+          TILE_CORNER_RADIUS,
+        );
         this.graphics.fill(0xffffff);
 
         const scale = DESTROY_POP_MAX_SCALE * (1 - easedT);
         this.container.scale.set(scale);
         this.container.alpha = 1 - easedT;
-
       } else {
         // Done
         this.container.visible = false;
@@ -315,7 +353,10 @@ export class Tile {
    */
   setUrgency(urgencyLevel) {
     // Map urgency 1.0-3.0 to vignette intensity 0.0-1.0
-    this.vignetteIntensity = Math.max(0, Math.min(1, (urgencyLevel - 1.0) / 2.0));
+    this.vignetteIntensity = Math.max(
+      0,
+      Math.min(1, (urgencyLevel - 1.0) / 2.0),
+    );
     this.updateGraphics();
   }
 

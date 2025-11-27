@@ -71,11 +71,7 @@ function rgbToHue(r, g, b) {
  * @param {Array} palette - The color palette
  * @returns {Object} { result: InteractionResult, newColorIndex: number }
  */
-export function resolveInteraction(
-  tileColorIndex,
-  pulseColorIndex,
-  palette
-) {
+export function resolveInteraction(tileColorIndex, pulseColorIndex, palette) {
   // Calculate the distance
   const diff = pulseColorIndex - tileColorIndex;
 

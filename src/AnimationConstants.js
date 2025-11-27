@@ -7,7 +7,8 @@ export const VIGNETTE_MAX_OPACITY = 0.6; // Maximum darkness at edges (60%)
 // Destroy animation timings (ms)
 export const DESTROY_FLASH_DURATION = 120;
 export const DESTROY_POP_DURATION = 180;
-export const DESTROY_TOTAL_DURATION = DESTROY_FLASH_DURATION + DESTROY_POP_DURATION;
+export const DESTROY_TOTAL_DURATION =
+  DESTROY_FLASH_DURATION + DESTROY_POP_DURATION;
 
 // Tile drop/cascade animation timings (ms)
 export const TILE_DROP_DURATION = 300;
