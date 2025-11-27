@@ -88,10 +88,11 @@ export function resolveInteraction(
   }
 
   // 2. Complementary Check (The Burnout) - True complementary colors = instant grey
+  // Skip this check for small palettes (≤3 colors) where binary mode uses only 2 extremes
   const tileColor = palette[tileColorIndex];
   const pulseColor = palette[pulseColorIndex];
 
-  if (areColorsComplementary(tileColor, pulseColor)) {
+  if (palette.length > 3 && areColorsComplementary(tileColor, pulseColor)) {
     return {
       result: InteractionResult.BURNOUT,
       newColorIndex: -1, // -1 indicates grey

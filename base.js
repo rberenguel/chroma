@@ -3,6 +3,7 @@
 import { LEVEL_CONFIGS, setCurrentLevel, getCurrentConfig } from "./src/LevelConfig.js";
 import { PulseSystem } from "./src/PulseSystem.js";
 import { Grid } from "./src/Grid.js";
+import { COLOR_NAMES } from "./src/ColorNames.js";
 
 (async () => {
   // --- PIXI App Setup ---
@@ -29,8 +30,94 @@ import { Grid } from "./src/Grid.js";
 
   // --- UI Elements ---
   const levelInfo = document.getElementById("level-info");
+  const paletteIndicator = document.getElementById("palette-indicator");
   const progressBar = document.getElementById("progress-bar");
   const statusText = document.getElementById("status-text");
+
+  // --- Helper Functions ---
+  function hexToRgb(hex) {
+    const r = (hex >> 16) & 0xff;
+    const g = (hex >> 8) & 0xff;
+    const b = hex & 0xff;
+    return { r, g, b };
+  }
+
+  function colorDistance(hex1, hex2) {
+    const c1 = hexToRgb(hex1);
+    const c2 = hexToRgb(hex2);
+    return Math.sqrt(
+      Math.pow(c1.r - c2.r, 2) +
+      Math.pow(c1.g - c2.g, 2) +
+      Math.pow(c1.b - c2.b, 2)
+    );
+  }
+
+  function findClosestColorName(hexColor) {
+    let closest = COLOR_NAMES[0];
+    let minDistance = Infinity;
+
+    for (const colorDef of COLOR_NAMES) {
+      const colorHex = parseInt(colorDef.hex.replace('#', ''), 16);
+      const distance = colorDistance(hexColor, colorHex);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = colorDef;
+      }
+    }
+
+    return closest.name;
+  }
+
+  function rgbToHsl(hex) {
+    const rgb = hexToRgb(hex);
+    const r = rgb.r / 255;
+    const g = rgb.g / 255;
+    const b = rgb.b / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+
+    if (max === min) {
+      return { h: 0, s: 0, l };
+    }
+
+    const d = max - min;
+    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    let h;
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+
+    return { h: h * 360, s, l };
+  }
+
+  function generateLevelName(palette) {
+    // Check if this is a monochrome palette (low saturation)
+    const avgSaturation = palette.reduce((sum, color) => {
+      const hsl = rgbToHsl(color);
+      return sum + hsl.s;
+    }, 0) / palette.length;
+
+    if (avgSaturation < 0.3) {
+      return "Monochrome";
+    }
+
+    // Use the extreme colors (first and last) to generate name
+    const color1Name = findClosestColorName(palette[0]);
+    const color2Name = findClosestColorName(palette[palette.length - 1]);
+
+    // If very similar colors, just use one name
+    if (color1Name === color2Name) {
+      return color1Name;
+    }
+
+    // Combine names for interesting level titles
+    return `${color1Name} to ${color2Name}`;
+  }
 
   // --- Initialize Game ---
   function initGame() {
@@ -52,8 +139,21 @@ import { Grid } from "./src/Grid.js";
 
   // --- Update UI ---
   function updateLevelInfo() {
-    levelInfo.textContent = `${config.name} - Level ${gameState.level}`;
+    const levelName = generateLevelName(config.palette);
+    levelInfo.textContent = `${levelName} - Level ${gameState.level}`;
+    updatePaletteIndicator();
     updateProgressBarGradient();
+  }
+
+  function updatePaletteIndicator() {
+    paletteIndicator.innerHTML = '';
+    config.palette.forEach(color => {
+      const colorHex = `#${color.toString(16).padStart(6, "0")}`;
+      const square = document.createElement('div');
+      square.className = 'palette-color';
+      square.style.backgroundColor = colorHex;
+      paletteIndicator.appendChild(square);
+    });
   }
 
   function updateProgressBarGradient() {

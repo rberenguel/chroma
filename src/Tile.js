@@ -49,6 +49,7 @@ export class Tile {
     this.updateGraphics();
 
     this.container.addChild(this.graphics);
+    this.container.addChild(this.vignetteGraphics);
 
     // Set position - centered on the tile position
     const totalSize = this.tileSize + this.padding;
@@ -79,6 +80,36 @@ export class Tile {
       this.graphics.fill(color);
       this.graphics.stroke({ width: TILE_STROKE_WIDTH_NORMAL, color: 0xffffff, alpha: 0.3 });
     }
+
+    this.updateVignette();
+  }
+
+  updateVignette() {
+    this.vignetteGraphics.clear();
+
+    // Don't draw vignette on grey tiles or when intensity is 0
+    if (this.isGrey || this.vignetteIntensity === 0) return;
+
+    const halfSize = this.tileSize / 2;
+    const darkness = this.vignetteIntensity * VIGNETTE_MAX_OPACITY;
+
+    // Create vignette effect by drawing multiple layers of semi-transparent rectangles
+    // Each layer is slightly smaller to create the feathering effect
+    const layers = 5;
+    for (let i = 0; i < layers; i++) {
+      const t = i / layers;
+      const inset = t * halfSize * 0.3; // Feather inwards by 30% of tile size
+      const layerOpacity = darkness * (1 - t); // Fade from edges to center
+
+      this.vignetteGraphics.roundRect(
+        -halfSize + inset,
+        -halfSize + inset,
+        this.tileSize - inset * 2,
+        this.tileSize - inset * 2,
+        TILE_CORNER_RADIUS
+      );
+      this.vignetteGraphics.fill({ color: 0x000000, alpha: layerOpacity / layers });
+    }
   }
 
 
@@ -90,19 +121,8 @@ export class Tile {
     // Don't update if destroy animation is running
     if (this.destroyAnimationId) return;
 
-    // Grey tiles don't breathe - they're locked/dead
-    if (this.isGrey) {
-      this.container.scale.set(1);
-      return;
-    }
-
-    this.age += deltaTime;
-    this.breatheTime += deltaTime * this.breatheSpeed * TILE_BREATHE_SPEED_FACTOR;
-
-    // Breathe animation - noticeable scale pulsing
-    const breatheAmount = Math.sin(this.breatheTime) * TILE_BREATHE_AMPLITUDE;
-    const scale = this.baseScale + breatheAmount;
-    this.container.scale.set(scale);
+    // Vignette effect is static and updates only when urgency changes
+    // No per-frame animation needed
   }
 
   /**
@@ -289,11 +309,13 @@ export class Tile {
   }
 
   /**
-   * Increases breathe speed for urgency
-   * @param {number} urgencyLevel - 1.0 = normal, 2.0 = hyperventilate
+   * Sets vignette darkness based on urgency level
+   * @param {number} urgencyLevel - 1.0 = safe, 3.0 = critical
    */
   setUrgency(urgencyLevel) {
-    this.breatheSpeed = urgencyLevel;
+    // Map urgency 1.0-3.0 to vignette intensity 0.0-1.0
+    this.vignetteIntensity = Math.max(0, Math.min(1, (urgencyLevel - 1.0) / 2.0));
+    this.updateGraphics();
   }
 
   /**

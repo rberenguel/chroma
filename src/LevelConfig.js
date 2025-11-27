@@ -73,8 +73,10 @@ function seededRandom(seed) {
  */
 function generateNeonPalette(seed, steps) {
   // Pick two random hues with high saturation and brightness (synthwave style)
-  const hue1 = Math.floor(seededRandom(seed) * 360);
-  const hue2 = Math.floor(seededRandom(seed + 1) * 360);
+  // Ensure they're at least 90 degrees apart for clear distinction
+  const hue1 = Math.floor(seededRandom(seed * 7) * 360);
+  const separation = 90 + Math.floor(seededRandom(seed * 13 + 5) * 180); // 90-270 degrees apart
+  const hue2 = (hue1 + separation) % 360;
 
   const color1 = hsbToRgb(hue1, 1.0, 1.0); // Full saturation and brightness
   const color2 = hsbToRgb(hue2, 1.0, 1.0);
@@ -88,7 +90,7 @@ function generateNeonPalette(seed, steps) {
  * @param {number} steps - Number of colors
  */
 function generateMonochromePalette(seed, steps) {
-  const hue = Math.floor(seededRandom(seed) * 360);
+  const hue = Math.floor(seededRandom(seed * 11) * 360);
   const palette = [];
 
   for (let i = 0; i < steps; i++) {
@@ -106,8 +108,8 @@ function generateMonochromePalette(seed, steps) {
  */
 function generateExtremePalette(seed, steps) {
   // Pick complementary or widely spaced hues
-  const hue1 = Math.floor(seededRandom(seed) * 360);
-  const hue2 = (hue1 + 120 + Math.floor(seededRandom(seed + 1) * 120)) % 360;
+  const hue1 = Math.floor(seededRandom(seed * 17) * 360);
+  const hue2 = (hue1 + 120 + Math.floor(seededRandom(seed * 23 + 7) * 120)) % 360;
 
   const color1 = hsbToRgb(hue1, 0.95, 1.0);
   const color2 = hsbToRgb(hue2, 0.95, 1.0);
@@ -119,10 +121,23 @@ function generateExtremePalette(seed, steps) {
  * Generate level config dynamically
  */
 function generateLevelConfig(level) {
+  // Level 1 is always the fixed tutorial level: Fire (Red to Yellow)
+  if (level === 1) {
+    return {
+      name: "Fire",
+      gridSize: { rows: 5, cols: 5 },
+      palette: generatePalette(0xff0000, 0xffff00, 3), // Red to yellow, 3 steps
+      safeThreshold: 3,
+      pulseMode: "binary",
+      stagnationTime: 30000,
+      targetScore: 15,
+    };
+  }
+
   // Cycle through difficulty patterns
   const pattern = ((level - 1) % 30) + 1;
 
-  // Levels 1-10: Easy (3 colors)
+  // Levels 2-10: Easy (3 colors)
   if (pattern <= 10) {
     const isNeon = pattern % 3 === 0;
     const isMono = pattern % 3 === 1;

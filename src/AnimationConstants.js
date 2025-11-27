@@ -2,8 +2,7 @@
 
 // Tile visual constants
 export const TILE_CORNER_RADIUS = 8;
-export const TILE_BREATHE_AMPLITUDE = 0.07; // Grow to about half padding (4px)
-export const TILE_BREATHE_SPEED_FACTOR = 0.01;
+export const VIGNETTE_MAX_OPACITY = 0.6; // Maximum darkness at edges (60%)
 
 // Destroy animation timings (ms)
 export const DESTROY_FLASH_DURATION = 120;
