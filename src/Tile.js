@@ -15,6 +15,7 @@ import {
   GREY_RESTORE_DELAY,
   TILE_STROKE_WIDTH_NORMAL,
   TILE_STROKE_WIDTH_CRACKED,
+  TILE_STROKE_WIDTH_LOCKED,
   CRACK_LINE_WIDTH,
   VIGNETTE_MAX_OPACITY,
 } from "./AnimationConstants.js";
@@ -72,7 +73,7 @@ export class Tile {
       this.graphics.roundRect(-halfSize, -halfSize, this.tileSize, this.tileSize, TILE_CORNER_RADIUS);
       this.graphics.fill(greyShade);
       // Thin white stroke to make grey tiles clearly distinct
-      this.graphics.stroke({ width: 2, color: 0xffffff, alpha: 0.6 });
+      this.graphics.stroke({ width: TILE_STROKE_WIDTH_LOCKED, color: 0xffffff, alpha: 0.6 });
     } else {
       // Normal colored tiles
       const color = this.palette[this.colorIndex];

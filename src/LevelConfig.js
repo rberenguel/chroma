@@ -117,6 +117,8 @@ function generateExtremePalette(seed, steps) {
   return generatePalette(color1, color2, steps);
 }
 
+const gameSeed = Math.random();
+
 /**
  * Generate level config dynamically
  */
@@ -130,30 +132,31 @@ function generateLevelConfig(level) {
       safeThreshold: 3,
       pulseMode: "binary",
       stagnationTime: 30000,
-      targetScore: 15,
+      targetScore: 8,
     };
   }
 
   // Cycle through difficulty patterns
   const pattern = ((level - 1) % 30) + 1;
 
-  // Levels 2-10: Easy (3 colors)
+  // Levels 2-10: Easy (3 or 4 colors)
   if (pattern <= 10) {
     const isNeon = pattern % 3 === 0;
     const isMono = pattern % 3 === 1;
+    const numColors = level < 4 ? 3 : 4;
 
     return {
       name: isNeon ? "Neon" : isMono ? "Mono" : "Shift",
       gridSize: { rows: 5, cols: 5 },
       palette: isNeon
-        ? generateNeonPalette(level, 3)
+        ? generateNeonPalette(level + gameSeed, numColors)
         : isMono
-        ? generateMonochromePalette(level, 4)
-        : generateExtremePalette(level, 3),
+        ? generateMonochromePalette(level + gameSeed, numColors)
+        : generateExtremePalette(level + gameSeed, numColors),
       safeThreshold: 3,
       pulseMode: "binary",
       stagnationTime: 30000,
-      targetScore: 15,
+      targetScore: level < 4 ? 8 : 15,
     };
   }
 
@@ -166,10 +169,10 @@ function generateLevelConfig(level) {
       name: isNeon ? "Neon" : isMono ? "Mono" : "Shift",
       gridSize: { rows: 5, cols: pattern % 2 === 0 ? 6 : 5 },
       palette: isNeon
-        ? generateNeonPalette(level, 4)
+        ? generateNeonPalette(level + gameSeed, 4)
         : isMono
-        ? generateMonochromePalette(level, 4)
-        : generateExtremePalette(level, 4),
+        ? generateMonochromePalette(level + gameSeed, 4)
+        : generateExtremePalette(level + gameSeed, 4),
       safeThreshold: pattern <= 15 ? 3 : 2,
       pulseMode: "binary",
       stagnationTime: 28000,
@@ -186,10 +189,10 @@ function generateLevelConfig(level) {
     name: isNeon ? "Neon" : isMono ? "Mono" : "Shift",
     gridSize: { rows: pattern <= 25 ? 5 : 6, cols: 6 },
     palette: isNeon
-      ? generateNeonPalette(level, steps)
+      ? generateNeonPalette(level + gameSeed, steps)
       : isMono
-      ? generateMonochromePalette(level, steps)
-      : generateExtremePalette(level, steps),
+      ? generateMonochromePalette(level + gameSeed, steps)
+      : generateExtremePalette(level + gameSeed, steps),
     safeThreshold: 2,
     pulseMode: "binary",
     stagnationTime: 25000 - (pattern - 20) * 300,

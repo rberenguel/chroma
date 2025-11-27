@@ -29,4 +29,5 @@ export const DESTROY_POP_MAX_SCALE = 1.2; // Maximum scale before shrinking
 // Stroke widths
 export const TILE_STROKE_WIDTH_NORMAL = 2;
 export const TILE_STROKE_WIDTH_CRACKED = 4;
+export const TILE_STROKE_WIDTH_LOCKED = 4;
 export const CRACK_LINE_WIDTH = 2;

@@ -43,6 +43,7 @@ export class Grid {
 
     // Pulse frame graphics
     this.pulseFrame = new PIXI.Graphics();
+    this.pulseFrameColor = 0xffffff; // Default to white
 
     this.initializeGrid();
     this.centerGrid();
@@ -511,23 +512,12 @@ export class Grid {
 
     // Draw rounded rectangle frame
     this.pulseFrame.roundRect(frameX, frameY, frameWidth, frameHeight, 20);
-    this.pulseFrame.stroke({ width: 8, color: 0xffffff, alpha: 1 });
+    this.pulseFrame.stroke({ width: 8, color: this.pulseFrameColor, alpha: 1 });
   }
 
   setPulseFrameColor(color) {
-    this.pulseFrame.clear();
-
-    const totalWidth = this.cols * (this.tileSize + this.TILE_PADDING);
-    const totalHeight = this.rows * (this.tileSize + this.TILE_PADDING);
-
-    const frameWidth = totalWidth + this.FRAME_PADDING * 2;
-    const frameHeight = totalHeight + this.FRAME_PADDING * 2;
-
-    const frameX = (this.app.screen.width - frameWidth) / 2;
-    const frameY = (this.app.screen.height - frameHeight) / 2;
-
-    this.pulseFrame.roundRect(frameX, frameY, frameWidth, frameHeight, 20);
-    this.pulseFrame.stroke({ width: 8, color: color, alpha: 1 });
+    this.pulseFrameColor = color;
+    this.updatePulseFrame();
   }
 
   getPulseFrame() {

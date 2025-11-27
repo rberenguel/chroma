@@ -85,4 +85,8 @@ export class PulseSystem {
   getCurrentColor() {
     return this.currentColor;
   }
+
+  getTargetColor() {
+    return this.palette[this.targetColorIndex];
+  }
 }
