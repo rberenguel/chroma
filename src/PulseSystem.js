@@ -36,10 +36,36 @@ export class PulseSystem {
    * Advance to the next color (called when user makes a move)
    */
   advance() {
-    // Move to next primary color
-    this.currentPrimaryIndex =
-      (this.currentPrimaryIndex + 1) % this.primaryIndices.length;
-    this.targetColorIndex = this.primaryIndices[this.currentPrimaryIndex];
+    if (this.mode === "binary") {
+      // Binary mode: randomly pick one of the two extreme colors
+      // but ensure it's different from current
+      const currentIsPrimaryZero =
+        this.currentColorIndex === this.primaryIndices[0];
+
+      // 50/50 chance to pick either extreme
+      const pickFirst = Math.random() < 0.5;
+
+      // If we randomly picked the same one we're on, use the other one
+      let chosenPrimaryIndex;
+      if (pickFirst) {
+        chosenPrimaryIndex = 0;
+      } else {
+        chosenPrimaryIndex = 1;
+      }
+
+      // If by chance we picked the same color we're on, flip to the other
+      if (this.primaryIndices[chosenPrimaryIndex] === this.currentColorIndex) {
+        chosenPrimaryIndex = 1 - chosenPrimaryIndex;
+      }
+
+      this.currentPrimaryIndex = chosenPrimaryIndex;
+      this.targetColorIndex = this.primaryIndices[this.currentPrimaryIndex];
+    } else {
+      // Cycle mode: move to next primary color
+      this.currentPrimaryIndex =
+        (this.currentPrimaryIndex + 1) % this.primaryIndices.length;
+      this.targetColorIndex = this.primaryIndices[this.currentPrimaryIndex];
+    }
 
     this.isAdvancing = true;
     this.transitionProgress = 0;

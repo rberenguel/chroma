@@ -1,0 +1,17 @@
+{
+  "short_name": "Chroma",
+  "version": "0.1.0",
+  "name": "Chroma",
+  "description": "A color-matching puzzle game inspired by Coloris",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}

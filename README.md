@@ -1,6 +1,8 @@
 # Chroma
 
-PWA based on Coloris for the Game Boy Advance. WIP.
+PWA based on [Coloris for the Game Boy Advance](https://en.wikipedia.org/wiki/Bit_Generations#Coloris).
+
+Still needs a bit of polish.
 
 Claude & Gemini
 

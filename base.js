@@ -1,6 +1,10 @@
 // Chroma - Main Game Loop
 
-import { LEVEL_CONFIGS, setCurrentLevel, getCurrentConfig } from "./src/LevelConfig.js";
+import {
+  LEVEL_CONFIGS,
+  setCurrentLevel,
+  getCurrentConfig,
+} from "./src/LevelConfig.js";
 import { PulseSystem } from "./src/PulseSystem.js";
 import { Grid } from "./src/Grid.js";
 import { COLOR_NAMES } from "./src/ColorNames.js";
@@ -18,7 +22,7 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
   // --- Game State ---
   // Check URL for level parameter
   const urlParams = new URLSearchParams(window.location.search);
-  const startLevel = parseInt(urlParams.get('level')) || 1;
+  const startLevel = parseInt(urlParams.get("level")) || 1;
 
   let config;
   let pulseSystem;
@@ -48,8 +52,8 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
     const c2 = hexToRgb(hex2);
     return Math.sqrt(
       Math.pow(c1.r - c2.r, 2) +
-      Math.pow(c1.g - c2.g, 2) +
-      Math.pow(c1.b - c2.b, 2)
+        Math.pow(c1.g - c2.g, 2) +
+        Math.pow(c1.b - c2.b, 2),
     );
   }
 
@@ -58,7 +62,7 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
     let minDistance = Infinity;
 
     for (const colorDef of COLOR_NAMES) {
-      const colorHex = parseInt(colorDef.hex.replace('#', ''), 16);
+      const colorHex = parseInt(colorDef.hex.replace("#", ""), 16);
       const distance = colorDistance(hexColor, colorHex);
       if (distance < minDistance) {
         minDistance = distance;
@@ -88,9 +92,15 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
 
     let h;
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-      case g: h = ((b - r) / d + 2) / 6; break;
-      case b: h = ((r - g) / d + 4) / 6; break;
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
     }
 
     return { h: h * 360, s, l };
@@ -98,10 +108,11 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
 
   function generateLevelName(palette) {
     // Check if this is a monochrome palette (low saturation)
-    const avgSaturation = palette.reduce((sum, color) => {
-      const hsl = rgbToHsl(color);
-      return sum + hsl.s;
-    }, 0) / palette.length;
+    const avgSaturation =
+      palette.reduce((sum, color) => {
+        const hsl = rgbToHsl(color);
+        return sum + hsl.s;
+      }, 0) / palette.length;
 
     if (avgSaturation < 0.3) {
       return "Monochrome";
@@ -147,11 +158,11 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
   }
 
   function updatePaletteIndicator() {
-    paletteIndicator.innerHTML = '';
-    config.palette.forEach(color => {
+    paletteIndicator.innerHTML = "";
+    config.palette.forEach((color) => {
       const colorHex = `#${color.toString(16).padStart(6, "0")}`;
-      const square = document.createElement('div');
-      square.className = 'palette-color';
+      const square = document.createElement("div");
+      square.className = "palette-color";
       square.style.backgroundColor = colorHex;
       paletteIndicator.appendChild(square);
     });
@@ -159,7 +170,9 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
 
   function updateProgressBarGradient() {
     // Create gradient from level palette colors
-    const colors = config.palette.map(c => `#${c.toString(16).padStart(6, "0")}`);
+    const colors = config.palette.map(
+      (c) => `#${c.toString(16).padStart(6, "0")}`,
+    );
     const gradient = `linear-gradient(90deg, ${colors.join(", ")})`;
     progressBar.style.background = gradient;
   }
@@ -196,6 +209,10 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
       return; // Already transitioning, prevent duplicate calls
     }
     gameState.isLevelCompleting = true; // Mark as transitioning
+
+    // Immediately disable grid interactions and show visual feedback
+    grid.disableInteractions();
+    grid.showLevelCompleteOverlay();
 
     statusText.textContent = "🎉 Level Complete!";
     statusText.style.color = "#00ff00";
