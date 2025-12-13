@@ -8,6 +8,7 @@ import {
 import { PulseSystem } from "./src/PulseSystem.js";
 import { Grid } from "./src/Grid.js";
 import { COLOR_NAMES } from "./src/ColorNames.js";
+import { initHaptic } from "./src/haptic.js";
 
 (async () => {
   // --- PIXI App Setup ---
@@ -18,6 +19,9 @@ import { COLOR_NAMES } from "./src/ColorNames.js";
     antialias: true,
   });
   document.body.appendChild(app.canvas);
+
+  // Initialize haptic feedback
+  initHaptic();
 
   // --- Game State ---
   // Check URL for level parameter

@@ -8,6 +8,7 @@ import {
   CASCADE_DELAY,
   GREY_RESTORE_DELAY,
 } from "./AnimationConstants.js";
+import { triggerHaptic } from "./haptic.js";
 
 export class Grid {
   constructor(pixiApp, config, pulseSystem) {
@@ -159,6 +160,9 @@ export class Grid {
     if (this.interactionsDisabled) {
       return;
     }
+
+    // Trigger haptic feedback
+    triggerHaptic();
 
     const tile = this.tiles[row][col];
 
