@@ -40,13 +40,17 @@ export class Grid {
     // Scale by grid size - smaller grids stagnate faster
     this.movesSinceLastMatch = 0;
     const gridArea = this.rows * this.cols;
+    // Much more forgiving - players need breathing room to think and recover
     if (gridArea <= 25) {
-      this.movesUntilStagnation = 7; // 5x5 grid
+      this.movesUntilStagnation = 16; // 5x5 grid
     } else if (gridArea <= 30) {
-      this.movesUntilStagnation = 10; // 5x6 grid
+      this.movesUntilStagnation = 20; // 5x6 grid
     } else {
-      this.movesUntilStagnation = 12; // 6x6 grid
+      this.movesUntilStagnation = 24; // 6x6 grid
     }
+
+    // Track which tile is about to stagnate so we can warn the player
+    this.nextStagnationTarget = null;
 
     // Container for all tiles
     this.container = new PIXI.Container();
@@ -188,6 +192,8 @@ export class Grid {
         break;
 
       case InteractionResult.BURNOUT:
+        tile.setStagnationWarning(0);
+        tile.setBurnoutWarning(false);
         tile.burnout();
         this.greyCount++;
         // Advance pulse after interaction
@@ -208,6 +214,9 @@ export class Grid {
         this.checkStagnation();
         break;
     }
+
+    // Refresh burnout warnings now that the pulse may have changed
+    this.updateBurnoutPreviews();
   }
 
   checkForMatches() {
@@ -239,6 +248,15 @@ export class Grid {
 
       this.movesSinceLastMatch = 0; // Reset move counter when match occurs
       this.matchCount++;
+
+      // Clear any pending stagnation warning since the player recovered
+      if (this.nextStagnationTarget) {
+        const { row, col } = this.nextStagnationTarget;
+        if (this.tiles[row] && this.tiles[row][col]) {
+          this.tiles[row][col].setStagnationWarning(0);
+        }
+        this.nextStagnationTarget = null;
+      }
     }
   }
 
@@ -352,6 +370,15 @@ export class Grid {
           tile.playRestoreEffect();
           this.greyCount--;
 
+          // If this restored tile was the pending stagnation target, clear it
+          if (
+            this.nextStagnationTarget &&
+            this.nextStagnationTarget.row === r &&
+            this.nextStagnationTarget.col === c
+          ) {
+            this.nextStagnationTarget = null;
+          }
+
           // Update urgency visuals after grey is cleared
           this.updateUrgencyVisuals();
         }, GREY_RESTORE_DELAY);
@@ -451,6 +478,8 @@ export class Grid {
 
         // Set color and start animation
         tile.setColor(move.colorIndex);
+        tile.setStagnationWarning(0);
+        tile.setBurnoutWarning(false);
         tile.getContainer().visible = true;
         tile.getContainer().alpha = 1;
         tile.getContainer().scale.set(1);
@@ -625,6 +654,9 @@ export class Grid {
   }
 
   update(deltaMS) {
+    // Update which tiles would burnout with the current pulse
+    this.updateBurnoutPreviews();
+
     // Only update tile visuals (for pulsing vignette effect)
     this.tiles.forEach((row) => {
       row.forEach((tile) => {
@@ -637,12 +669,56 @@ export class Grid {
    * Check if stagnation should trigger and spawn grey tiles
    */
   checkStagnation() {
-    // Trigger every 15 moves without a match, spawn only 1 grey at a time
-    if (this.movesSinceLastMatch >= this.movesUntilStagnation) {
-      this.triggerStagnation();
-      // Don't reset counter to 0, just reduce by threshold
-      // This allows for continued pressure
-      this.movesSinceLastMatch -= this.movesUntilStagnation;
+    const WARNING_THRESHOLD = 3; // Start warning 3 moves before grey
+
+    // Clear stale target if it became grey or disappeared
+    if (this.nextStagnationTarget) {
+      const { row, col } = this.nextStagnationTarget;
+      const tile = this.tiles[row]?.[col];
+      if (!tile || tile.isGrey) {
+        if (tile) tile.setStagnationWarning(0);
+        this.nextStagnationTarget = null;
+      }
+    }
+
+    const movesRemaining = this.movesUntilStagnation - this.movesSinceLastMatch;
+
+    if (movesRemaining <= WARNING_THRESHOLD && movesRemaining > 0) {
+      // Pick a target if we don't have one
+      if (!this.nextStagnationTarget) {
+        this.nextStagnationTarget = this.pickStagnationCandidate();
+      }
+
+      if (this.nextStagnationTarget) {
+        const { row, col } = this.nextStagnationTarget;
+        const warningLevel = WARNING_THRESHOLD - movesRemaining + 1; // 1..3
+        this.tiles[row][col].setStagnationWarning(warningLevel);
+      }
+    } else if (movesRemaining <= 0) {
+      // Time's up - spawn the grey
+      if (this.nextStagnationTarget) {
+        const { row, col } = this.nextStagnationTarget;
+        const tile = this.tiles[row]?.[col];
+        if (tile && !tile.isGrey) {
+          tile.setStagnationWarning(0);
+          tile.burnout();
+          this.greyCount++;
+        }
+        this.nextStagnationTarget = null;
+      } else {
+        this.triggerStagnation();
+      }
+      // Give the player a full clean slate after each stagnation event
+      this.movesSinceLastMatch = 0;
+    } else {
+      // Safe zone - clear any lingering warning
+      if (this.nextStagnationTarget) {
+        const { row, col } = this.nextStagnationTarget;
+        if (this.tiles[row]?.[col]) {
+          this.tiles[row][col].setStagnationWarning(0);
+        }
+        this.nextStagnationTarget = null;
+      }
     }
 
     // Update urgency visuals for tiles near grey tiles
@@ -716,6 +792,8 @@ export class Grid {
     for (const { tile, weight } of candidates) {
       random -= weight;
       if (random <= 0) {
+        tile.setStagnationWarning(0);
+        tile.setBurnoutWarning(false);
         tile.burnout();
         this.greyCount++;
 
@@ -724,6 +802,122 @@ export class Grid {
         break;
       }
     }
+  }
+
+  /**
+   * Pick the next tile that will stagnate (for warning purposes)
+   */
+  pickStagnationCandidate() {
+    const candidates = [];
+    const hasExistingGreys = this.greyCount > 0;
+
+    this.tiles.forEach((row, r) => {
+      row.forEach((tile, c) => {
+        if (!tile.isGrey) {
+          if (!hasExistingGreys && r < 2) return;
+
+          const edgeDistance = this.calculateEdgeDistance(r, c);
+          const greyNeighbors = this.countGreyNeighbors(r, c);
+          const isActualEdge = edgeDistance === 0;
+          const isAdjacentToGrey = greyNeighbors > 0;
+
+          if (!isActualEdge && !isAdjacentToGrey) return;
+
+          const weight = 10 - edgeDistance + greyNeighbors * 5;
+          candidates.push({ row: r, col: c, weight });
+        }
+      });
+    });
+
+    if (candidates.length === 0) return null;
+
+    const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const candidate of candidates) {
+      random -= candidate.weight;
+      if (random <= 0) {
+        return { row: candidate.row, col: candidate.col };
+      }
+    }
+    return { row: candidates[0].row, col: candidates[0].col };
+  }
+
+  /**
+   * Show/hide burnout warnings on tiles based on current pulse
+   */
+  updateBurnoutPreviews() {
+    if (!this.pulseSystem) return;
+    const pulseIndex = this.pulseSystem.getCurrentColorIndex();
+
+    this.tiles.forEach((row) => {
+      row.forEach((tile) => {
+        if (tile.isGrey) {
+          tile.setBurnoutWarning(false);
+          return;
+        }
+        const result = resolveInteraction(
+          tile.colorIndex,
+          pulseIndex,
+          this.palette,
+        );
+        tile.setBurnoutWarning(result.result === InteractionResult.BURNOUT);
+      });
+    });
+  }
+
+  /**
+   * Brief celebratory flash on every tile — contained to the board,
+   * dark-mode safe, feels like a little fireworks pop.
+   */
+  celebrate() {
+    const duration = 350;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const t = Math.min(elapsed / duration, 1);
+
+      // bell curve: 0 -> 1 -> 0 over the duration
+      const intensity = Math.sin(t * Math.PI);
+
+      this.tiles.forEach((row) => {
+        row.forEach((tile) => {
+          const g = tile.getGraphics();
+          if (g && !g.destroyed) {
+            // interpolate tint from white (celebration) back to normal
+            const dim = Math.floor(255 * (1 - intensity * 0.55));
+            g.tint = (dim << 16) | (dim << 8) | dim;
+          }
+          const c = tile.getContainer();
+          if (c && !c.destroyed) {
+            // subtle scale pop 1.0 -> 1.08 -> 1.0
+            const scale = 1 + intensity * 0.08;
+            c.scale.set(scale);
+          }
+        });
+      });
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // ensure clean state
+        this.tiles.forEach((row) => {
+          row.forEach((tile) => {
+            const g = tile.getGraphics();
+            if (g && !g.destroyed) g.tint = 0xffffff;
+            const c = tile.getContainer();
+            if (c && !c.destroyed) c.scale.set(1);
+          });
+        });
+      }
+    };
+
+    animate();
+  }
+
+  getGraphics() {
+    return this.graphics;
   }
 
   getContainer() {
@@ -744,51 +938,6 @@ export class Grid {
 
   enableInteractions() {
     this.interactionsDisabled = false;
-  }
-
-  showLevelCompleteOverlay() {
-    // Create a semi-transparent overlay
-    const overlay = new PIXI.Graphics();
-
-    const totalWidth = this.cols * (this.tileSize + this.TILE_PADDING);
-    const totalHeight = this.rows * (this.tileSize + this.TILE_PADDING);
-
-    // Green tinted overlay with pulsing effect
-    overlay.rect(0, 0, totalWidth, totalHeight);
-    overlay.fill({ color: 0x00ff00, alpha: 0 });
-
-    this.container.addChild(overlay);
-
-    // Animate the overlay
-    const startTime = Date.now();
-    const duration = 800;
-
-    const animate = () => {
-      if (!overlay || overlay.destroyed) return;
-
-      const elapsed = Date.now() - startTime;
-      const t = Math.min(elapsed / duration, 1);
-
-      // Pulse the alpha
-      const pulse = Math.sin(t * Math.PI * 3) * 0.3 + 0.3; // 0.0 to 0.6
-
-      try {
-        overlay.clear();
-        overlay.rect(0, 0, totalWidth, totalHeight);
-        overlay.fill({ color: 0x00ff00, alpha: pulse });
-      } catch (e) {
-        return;
-      }
-
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    animate();
-
-    // Store reference for cleanup
-    this.levelCompleteOverlay = overlay;
   }
 
   updatePulseFrame() {

@@ -142,6 +142,34 @@ function generateExtremePalette(seed, steps) {
   return generatePalette(color1, color2, steps);
 }
 
+// Solarized Dark accent colors — placed around the hue wheel
+const SOLARIZED_ACCENT_COLORS = [
+  0x859900, // Green
+  0x2aa198, // Cyan
+  0x268bd2, // Blue
+  0x6c71c4, // Violet
+  0xd33682, // Magenta
+  0xdc322f, // Red
+  0xcb4b16, // Orange
+  0xb58900, // Yellow
+];
+
+/**
+ * Generate a Solarized Dark palette (contiguous slice of accent colors)
+ * @param {number} seed - Seed for rotation
+ * @param {number} steps - Number of colors (up to 8)
+ */
+function generateSolarizedPalette(seed, steps) {
+  const maxLen = SOLARIZED_ACCENT_COLORS.length;
+  const offset = Math.floor(seededRandom(seed * 41) * maxLen);
+  const palette = [];
+  for (let i = 0; i < steps; i++) {
+    const idx = (offset + i) % maxLen;
+    palette.push(SOLARIZED_ACCENT_COLORS[idx]);
+  }
+  return palette;
+}
+
 const gameSeed = Math.random();
 
 /**
@@ -166,18 +194,22 @@ function generateLevelConfig(level) {
 
   // Levels 2-10: Easy (3 or 4 colors)
   if (pattern <= 10) {
-    const isNeon = pattern % 3 === 0;
-    const isMono = pattern % 3 === 1;
+    const type = pattern % 4;
+    const isNeon = type === 0;
+    const isMono = type === 1;
+    const isSolarized = type === 2;
     const numColors = level < 4 ? 3 : 4;
 
     return {
-      name: isNeon ? "Neon" : isMono ? "Mono" : "Shift",
+      name: isNeon ? "Neon" : isMono ? "Mono" : isSolarized ? "Solarized" : "Shift",
       gridSize: { rows: 5, cols: 5 },
       palette: isNeon
         ? generateNeonPalette(level + gameSeed, numColors)
         : isMono
           ? generateMonochromePalette(level + gameSeed, numColors)
-          : generateExtremePalette(level + gameSeed, numColors),
+          : isSolarized
+            ? generateSolarizedPalette(level + gameSeed, numColors)
+            : generateExtremePalette(level + gameSeed, numColors),
       safeThreshold: 3,
       pulseMode: "binary",
       stagnationTime: 30000,
@@ -187,17 +219,21 @@ function generateLevelConfig(level) {
 
   // Levels 11-20: Medium (4 colors)
   if (pattern <= 20) {
-    const isNeon = pattern % 3 === 0;
-    const isMono = pattern % 3 === 1;
+    const type = pattern % 4;
+    const isNeon = type === 0;
+    const isMono = type === 1;
+    const isSolarized = type === 2;
 
     return {
-      name: isNeon ? "Neon" : isMono ? "Mono" : "Shift",
+      name: isNeon ? "Neon" : isMono ? "Mono" : isSolarized ? "Solarized" : "Shift",
       gridSize: { rows: 5, cols: pattern % 2 === 0 ? 6 : 5 },
       palette: isNeon
         ? generateNeonPalette(level + gameSeed, 4)
         : isMono
           ? generateMonochromePalette(level + gameSeed, 4)
-          : generateExtremePalette(level + gameSeed, 4),
+          : isSolarized
+            ? generateSolarizedPalette(level + gameSeed, 4)
+            : generateExtremePalette(level + gameSeed, 4),
       safeThreshold: pattern <= 15 ? 3 : 2,
       pulseMode: "binary",
       stagnationTime: 28000,
@@ -206,18 +242,22 @@ function generateLevelConfig(level) {
   }
 
   // Levels 21-30: Hard (5-6 colors)
-  const isNeon = pattern % 3 === 0;
-  const isMono = pattern % 3 === 1;
+  const type = pattern % 4;
+  const isNeon = type === 0;
+  const isMono = type === 1;
+  const isSolarized = type === 2;
   const steps = pattern <= 25 ? 5 : 6;
 
   return {
-    name: isNeon ? "Neon" : isMono ? "Mono" : "Shift",
+    name: isNeon ? "Neon" : isMono ? "Mono" : isSolarized ? "Solarized" : "Shift",
     gridSize: { rows: pattern <= 25 ? 5 : 6, cols: 6 },
     palette: isNeon
       ? generateNeonPalette(level + gameSeed, steps)
       : isMono
         ? generateMonochromePalette(level + gameSeed, steps)
-        : generateExtremePalette(level + gameSeed, steps),
+        : isSolarized
+          ? generateSolarizedPalette(level + gameSeed, steps)
+          : generateExtremePalette(level + gameSeed, steps),
     safeThreshold: 2,
     pulseMode: "binary",
     stagnationTime: 25000 - (pattern - 20) * 300,

@@ -51,10 +51,16 @@ export class Tile {
     // Stagnation visuals (controlled by Grid)
     this.urgency = 0.0; // 0.0 = safe, 1.0 = maximum danger (set by Grid based on grey neighbors)
 
+    // Warning states
+    this.stagnationWarning = 0; // 0 = none, 1..4 = escalating warning
+    this.burnoutWarning = false;
+
     // Visual elements
     this.container = new PIXI.Container();
     this.graphics = new PIXI.Graphics();
     this.vignetteGraphics = new PIXI.Graphics();
+    this.warningGraphics = new PIXI.Graphics();
+    this.burnoutGraphics = new PIXI.Graphics();
 
     this.setupVisuals();
   }
@@ -65,6 +71,8 @@ export class Tile {
 
     this.container.addChild(this.graphics);
     this.container.addChild(this.vignetteGraphics);
+    this.container.addChild(this.warningGraphics);
+    this.container.addChild(this.burnoutGraphics);
 
     // Set position - centered on the tile position
     const totalSize = this.tileSize + this.padding;
@@ -205,6 +213,13 @@ export class Tile {
     if (!this.isGrey && this.urgency >= 0.4) {
       this.updateVignette();
     }
+
+    // Pulse stagnation warning
+    if (this.stagnationWarning > 0 && this.warningGraphics) {
+      const speed = 200 + (3 - this.stagnationWarning) * 150; // faster as danger rises
+      const pulse = Math.sin(Date.now() / speed) * 0.3 + 0.7;
+      this.warningGraphics.alpha = pulse;
+    }
   }
 
   /**
@@ -243,6 +258,8 @@ export class Tile {
       this.greyHealth = 0;
       // Reset urgency when tile becomes normal (restored from grey or new tile)
       this.urgency = 0;
+      this.setStagnationWarning(0);
+      this.setBurnoutWarning(false);
     }
 
     // Animate color shift if requested and both colors are valid
@@ -595,6 +612,85 @@ export class Tile {
   }
 
   /**
+   * Set stagnation warning level (0 = none, 1..3 = escalating)
+   */
+  setStagnationWarning(level) {
+    this.stagnationWarning = level;
+    this.drawStagnationWarning();
+  }
+
+  drawStagnationWarning() {
+    if (!this.warningGraphics || this.warningGraphics.destroyed) return;
+
+    this.warningGraphics.clear();
+
+    if (this.stagnationWarning === 0) return;
+
+    const halfSize = this.tileSize / 2;
+    // One line -> two line -> three line -> grey
+    const widths = [2, 4, 6];
+
+    const idx = Math.min(this.stagnationWarning, 3) - 1;
+    const width = widths[idx];
+
+    // Draw the border fully OUTSIDE the tile so it's always visible
+    // against the black background regardless of tile color
+    const outset = width / 2;
+    this.warningGraphics.roundRect(
+      -halfSize - outset,
+      -halfSize - outset,
+      this.tileSize + width,
+      this.tileSize + width,
+      TILE_CORNER_RADIUS + outset,
+    );
+    this.warningGraphics.stroke({
+      width: width,
+      color: 0xffffff,
+      alpha: 0.9,
+    });
+  }
+
+  /**
+   * Show or hide burnout warning indicator
+   */
+  setBurnoutWarning(active) {
+    this.burnoutWarning = active;
+    this.drawBurnoutWarning();
+  }
+
+  drawBurnoutWarning() {
+    if (!this.burnoutGraphics || this.burnoutGraphics.destroyed) return;
+    this.burnoutGraphics.clear();
+
+    if (!this.burnoutWarning || this.isGrey) return;
+
+    const halfSize = this.tileSize / 2;
+    const size = halfSize * 0.28;
+    const weight = Math.max(2, this.tileSize * 0.06);
+
+    // Pick a contrasting colour based on tile brightness so the X is always legible
+    const color = this.palette[this.colorIndex];
+    const r = (color >> 16) & 0xff;
+    const g = (color >> 8) & 0xff;
+    const b = color & 0xff;
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    const xColor = luminance > 140 ? 0x111111 : 0xffffff;
+
+    // Small X in the centre — two crossing diagonal strokes
+    this.burnoutGraphics.moveTo(-size, -size);
+    this.burnoutGraphics.lineTo(size, size);
+    this.burnoutGraphics.moveTo(size, -size);
+    this.burnoutGraphics.lineTo(-size, size);
+    this.burnoutGraphics.stroke({
+      width: weight,
+      color: xColor,
+      alpha: 0.85,
+      cap: "round",
+      join: "round",
+    });
+  }
+
+  /**
    * Sets vignette darkness based on urgency level
    * @param {number} urgencyLevel - 1.0 = safe, 3.0 = critical
    */
@@ -605,6 +701,13 @@ export class Tile {
       Math.min(1, (urgencyLevel - 1.0) / 2.0),
     );
     this.updateGraphics();
+  }
+
+  /**
+   * Gets the PIXI graphics object (for tint / effects)
+   */
+  getGraphics() {
+    return this.graphics;
   }
 
   /**

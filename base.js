@@ -151,6 +151,83 @@ import { initHaptic } from "./src/haptic.js";
 
     // Update UI
     updateLevelInfo();
+
+    // Expose debug helpers for testing stagnation visuals
+    exposeDebugHelpers();
+  }
+
+  function exposeDebugHelpers() {
+    window.getStagnationState = () => ({
+      movesSinceLastMatch: grid.movesSinceLastMatch,
+      movesUntilStagnation: grid.movesUntilStagnation,
+      greyCount: grid.greyCount,
+      nextStagnationTarget: grid.nextStagnationTarget,
+    });
+
+    // Step stagnation forward by one warning level each call
+    window.triggerStagnation = () => {
+      let currentWarning = 0;
+      if (grid.nextStagnationTarget) {
+        const { row, col } = grid.nextStagnationTarget;
+        currentWarning = grid.tiles[row][col].stagnationWarning || 0;
+      }
+      if (currentWarning >= 3) {
+        // Already at max warning - spawn grey now
+        grid.movesSinceLastMatch = grid.movesUntilStagnation;
+      } else {
+        // Advance one warning level (1 -> 2 -> 3 -> grey)
+        grid.movesSinceLastMatch =
+          grid.movesUntilStagnation - (3 - currentWarning);
+      }
+      grid.checkStagnation();
+      return window.getStagnationState();
+    };
+
+    // Instantly spawn a grey tile at the current warning target (or pick one)
+    window.forceStagnation = () => {
+      grid.movesSinceLastMatch = grid.movesUntilStagnation;
+      if (grid.nextStagnationTarget) {
+        const { row, col } = grid.nextStagnationTarget;
+        const tile = grid.tiles[row]?.[col];
+        if (tile && !tile.isGrey) {
+          tile.setStagnationWarning(0);
+          tile.burnout();
+          grid.greyCount++;
+        }
+        grid.nextStagnationTarget = null;
+      } else {
+        grid.triggerStagnation();
+      }
+      grid.movesSinceLastMatch = 0;
+      grid.updateUrgencyVisuals();
+      return window.getStagnationState();
+    };
+
+    // Set the stagnation warning to a specific level (1-3) for immediate visual check
+    window.setStagnationWarning = (level = 3) => {
+      grid.movesSinceLastMatch = grid.movesUntilStagnation - (4 - level);
+      grid.checkStagnation();
+      return window.getStagnationState();
+    };
+
+    // Jump directly to any level (e.g. jumpToLevel(2) for first Solarized)
+    window.jumpToLevel = (levelNum = 1) => {
+      gameState.level = Math.max(1, parseInt(levelNum) || 1);
+      gameState.score = 0;
+      gameState.isLevelCompleting = false;
+
+      if (grid) {
+        app.stage.removeChild(grid.getPulseFrame());
+        app.stage.removeChild(grid.getContainer());
+        grid.destroy();
+      }
+
+      statusText.style.color = "#ff6666";
+      statusText.classList.remove("visible");
+
+      initGame();
+      return window.getStagnationState();
+    };
   }
 
   // --- Update UI ---
@@ -210,48 +287,86 @@ import { initHaptic } from "./src/haptic.js";
 
   function onLevelComplete() {
     if (gameState.isLevelCompleting) {
-      return; // Already transitioning, prevent duplicate calls
+      return;
     }
-    gameState.isLevelCompleting = true; // Mark as transitioning
+    gameState.isLevelCompleting = true;
 
-    // Immediately disable grid interactions and show visual feedback
     grid.disableInteractions();
-    grid.showLevelCompleteOverlay();
+    grid.celebrate();
 
-    statusText.textContent = "🎉 Level Complete!";
-    statusText.style.color = "#00ff00";
+    statusText.textContent = "Level Complete!";
+    statusText.style.color = "#ffffff";
     statusText.classList.add("visible");
-    progressBar.style.width = "0%"; // Immediately reset progress bar
 
     setTimeout(() => {
       gameState.level++;
-
-      // Check if level exists, otherwise loop back
       if (!LEVEL_CONFIGS[gameState.level]) {
         gameState.level = 1;
       }
-
       gameState.score = 0;
       advanceToNextLevel();
-    }, 2000);
+    }, 1100);
   }
 
   function advanceToNextLevel() {
-    gameState.isLevelCompleting = false; // Reset flag for the new level
+    const oldGrid = grid;
+    const oldPulseFrame = grid ? grid.getPulseFrame() : null;
+    const fadeOutDuration = 450;
+    const fadeInDuration = 450;
 
-    // Clean up
-    if (grid) {
-      app.stage.removeChild(grid.getPulseFrame());
-      app.stage.removeChild(grid.getContainer());
-      grid.destroy();
-    }
+    const fadeOutStart = Date.now();
+    const fadeOut = () => {
+      if (!oldGrid) {
+        finishSwap();
+        return;
+      }
+      const elapsed = Date.now() - fadeOutStart;
+      const t = Math.min(elapsed / fadeOutDuration, 1);
+      const eased = 1 - Math.pow(1 - t, 2);
 
-    // Reset
-    statusText.style.color = "#ff6666";
-    statusText.classList.remove("visible");
+      const container = oldGrid.getContainer();
+      if (container && !container.destroyed) container.alpha = 1 - eased;
+      if (oldPulseFrame && !oldPulseFrame.destroyed) oldPulseFrame.alpha = 1 - eased;
 
-    // Reinitialize with new level
-    initGame();
+      if (t < 1) {
+        requestAnimationFrame(fadeOut);
+      } else {
+        if (oldPulseFrame && !oldPulseFrame.destroyed) app.stage.removeChild(oldPulseFrame);
+        if (container && !container.destroyed) app.stage.removeChild(container);
+        if (oldGrid) oldGrid.destroy();
+        finishSwap();
+      }
+    };
+    fadeOut();
+
+    const finishSwap = () => {
+      initGame();
+
+      const newGrid = grid.getContainer();
+      const newPulse = grid.getPulseFrame();
+      newGrid.alpha = 0;
+      newPulse.alpha = 0;
+
+      const fadeInStart = Date.now();
+      const fadeIn = () => {
+        const elapsed = Date.now() - fadeInStart;
+        const t = Math.min(elapsed / fadeInDuration, 1);
+        const eased = 1 - Math.pow(1 - t, 2);
+
+        if (newGrid && !newGrid.destroyed) newGrid.alpha = eased;
+        if (newPulse && !newPulse.destroyed) newPulse.alpha = eased;
+
+        if (t < 1) {
+          requestAnimationFrame(fadeIn);
+        } else {
+          // Only clear the text once the new board is fully visible
+          statusText.style.color = "#ff6666";
+          statusText.classList.remove("visible");
+          gameState.isLevelCompleting = false;
+        }
+      };
+      fadeIn();
+    };
   }
 
   // --- Animation Loop (Ticker) ---

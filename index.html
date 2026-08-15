@@ -20,20 +20,86 @@
       </div>
       <div id="status-text"></div>
     </div>
+
+    <div id="update-banner" hidden>
+      <span>Update available</span>
+      <button id="update-btn">Reload</button>
+    </div>
+
+    <div id="install-banner" hidden>
+      <span id="install-msg">Install Chroma for offline play</span>
+      <button id="install-btn">Install</button>
+      <button id="install-dismiss">×</button>
+    </div>
     <script src="libs/pixi8.1.5.min.js"></script>
     <script type="module" src="base.js"></script>
     <script>
-      // Register service worker for PWA offline support
+      // ── Service Worker (refreshable cache) ──
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
           .register("./sw.js")
-          .then(() => {
-            console.log("Service Worker registered");
+          .then((registration) => {
+            console.log("SW registered");
+
+            // Detect when a new version is waiting
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+              if (!newWorker) return;
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "activated" &&
+                  navigator.serviceWorker.controller
+                ) {
+                  document.getElementById("update-banner").hidden = false;
+                }
+              });
+            });
           })
-          .catch((error) => {
-            console.log("Service Worker registration failed:", error);
-          });
+          .catch((err) => console.error("SW registration failed:", err));
+
+        document
+          .getElementById("update-btn")
+          .addEventListener("click", () => window.location.reload());
       }
+
+      // ── Install prompt ──
+      let installPrompt = null;
+      const installBanner = document.getElementById("install-banner");
+      const installBtn = document.getElementById("install-btn");
+      const installDismiss = document.getElementById("install-dismiss");
+      const installMsg = document.getElementById("install-msg");
+
+      // iOS Safari doesn't support beforeinstallprompt — show manual hint
+      const isIOS =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !window.MSStream;
+
+      if (isIOS && !navigator.standalone) {
+        installMsg.textContent =
+          'Tap Share → "Add to Home Screen" to install';
+        installBtn.hidden = true;
+        installBanner.hidden = false;
+      }
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        installPrompt = e;
+        installBanner.hidden = false;
+      });
+
+      installBtn.addEventListener("click", async () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        if (outcome === "accepted") {
+          installBanner.hidden = true;
+        }
+        installPrompt = null;
+      });
+
+      installDismiss.addEventListener("click", () => {
+        installBanner.hidden = true;
+      });
     </script>
   </body>
 </html>
