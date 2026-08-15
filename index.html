@@ -9,6 +9,7 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ff0000" />
+    <link rel="stylesheet" href="fonts/phosphor.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -29,77 +30,78 @@
     <div id="install-banner" hidden>
       <span id="install-msg">Install Chroma for offline play</span>
       <button id="install-btn">Install</button>
-      <button id="install-dismiss">×</button>
+      <button id="install-dismiss"><i class="ph-light ph-x"></i></button>
     </div>
     <script src="libs/pixi8.1.5.min.js"></script>
     <script type="module" src="base.js"></script>
     <script>
-      // ── Service Worker (refreshable cache) ──
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("./sw.js")
-          .then((registration) => {
-            console.log("SW registered");
-
-            // Detect when a new version is waiting
-            registration.addEventListener("updatefound", () => {
-              const newWorker = registration.installing;
-              if (!newWorker) return;
-              newWorker.addEventListener("statechange", () => {
-                if (
-                  newWorker.state === "activated" &&
-                  navigator.serviceWorker.controller
-                ) {
-                  document.getElementById("update-banner").hidden = false;
-                }
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                    document.getElementById('update-banner').hidden = false;
+                  }
+                });
               });
-            });
-          })
-          .catch((err) => console.error("SW registration failed:", err));
+            })
+            .catch(err => console.error('SW registration failed:', err));
+        });
 
-        document
-          .getElementById("update-btn")
-          .addEventListener("click", () => window.location.reload());
+        document.getElementById('update-btn').addEventListener('click', e => {
+          e.preventDefault();
+          window.location.reload();
+        });
       }
 
-      // ── Install prompt ──
-      let installPrompt = null;
-      const installBanner = document.getElementById("install-banner");
-      const installBtn = document.getElementById("install-btn");
-      const installDismiss = document.getElementById("install-dismiss");
-      const installMsg = document.getElementById("install-msg");
+      // ── Install prompt (mobile only) ──
+      const isMobile = /android|iphone|ipad|ipod|mobi/i.test(
+        navigator.userAgent.toLowerCase(),
+      );
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        navigator.standalone === true;
 
-      // iOS Safari doesn't support beforeinstallprompt — show manual hint
-      const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-        !window.MSStream;
+      if (isMobile && !isStandalone) {
+        let installPrompt = null;
+        const installBanner = document.getElementById("install-banner");
+        const installBtn = document.getElementById("install-btn");
+        const installDismiss = document.getElementById("install-dismiss");
+        const installMsg = document.getElementById("install-msg");
 
-      if (isIOS && !navigator.standalone) {
-        installMsg.textContent =
-          'Tap Share → "Add to Home Screen" to install';
-        installBtn.hidden = true;
-        installBanner.hidden = false;
-      }
-
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        installPrompt = e;
-        installBanner.hidden = false;
-      });
-
-      installBtn.addEventListener("click", async () => {
-        if (!installPrompt) return;
-        installPrompt.prompt();
-        const { outcome } = await installPrompt.userChoice;
-        if (outcome === "accepted") {
-          installBanner.hidden = true;
+        const isIOS =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          installMsg.textContent =
+            'Tap Share → "Add to Home Screen" to install';
+          installBtn.hidden = true;
+          installBanner.hidden = false;
         }
-        installPrompt = null;
-      });
 
-      installDismiss.addEventListener("click", () => {
-        installBanner.hidden = true;
-      });
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          installPrompt = e;
+          installBanner.hidden = false;
+        });
+
+        installBtn.addEventListener("click", async () => {
+          if (!installPrompt) return;
+          installPrompt.prompt();
+          const { outcome } = await installPrompt.userChoice;
+          if (outcome === "accepted") {
+            installBanner.hidden = true;
+          }
+          installPrompt = null;
+        });
+
+        installDismiss.addEventListener("click", () => {
+          installBanner.hidden = true;
+        });
+      }
     </script>
   </body>
 </html>

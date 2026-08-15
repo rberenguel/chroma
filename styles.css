@@ -95,6 +95,10 @@ canvas {
   pointer-events: auto;
 }
 
+#update-banner[hidden] {
+  display: none;
+}
+
 #update-banner button {
   background: #ffffff;
   color: #000000;
@@ -150,6 +154,10 @@ canvas {
   line-height: 1;
   cursor: pointer;
   padding: 0 4px;
+}
+
+#install-banner[hidden] {
+  display: none;
 }
 
 #install-dismiss:hover {

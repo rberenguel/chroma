@@ -3,6 +3,8 @@ const CACHE_NAME = "chroma-v0.2.0";
 const CACHE_FILES = [
   "./base.js",
   "./favicon.ico",
+  "./fonts/Phosphor-Light.woff2",
+  "./fonts/phosphor.css",
   "./icon.png",
   "./index.html",
   "./libs/pixi8.1.5.min.js",
