@@ -79,7 +79,7 @@ canvas {
 /* ── Update banner ── */
 #update-banner {
   position: fixed;
-  bottom: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom) + 8px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -113,9 +113,10 @@ canvas {
 /* ── Install banner ── */
 #install-banner {
   position: fixed;
-  bottom: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom) + 8px);
   left: 16px;
   right: 16px;
+  top: auto;
   z-index: 1000;
   background: rgba(0, 0, 0, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -128,10 +129,16 @@ canvas {
   font-size: 14px;
   color: #ffffff;
   pointer-events: auto;
+  box-sizing: border-box;
+  min-height: 48px;
 }
 
 #install-banner span {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #install-btn {
@@ -144,16 +151,23 @@ canvas {
   font-weight: bold;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 #install-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   border: none;
-  font-size: 20px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 #install-banner[hidden] {

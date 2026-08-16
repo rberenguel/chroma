@@ -15,7 +15,7 @@ import { initHaptic } from "./src/haptic.js";
   const app = new PIXI.Application();
   await app.init({
     resizeTo: window,
-    backgroundColor: 0x111111,
+    backgroundColor: 0x000000,
     antialias: true,
   });
   document.body.appendChild(app.canvas);

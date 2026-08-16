@@ -1,5 +1,5 @@
 // Generated with get_cache.go — run `go run get_cache.go` to regenerate.
-const CACHE_NAME = "chroma-v0.2.0";
+const CACHE_NAME = "chroma-v0.2.1";
 const CACHE_FILES = [
   "./base.js",
   "./favicon.ico",
